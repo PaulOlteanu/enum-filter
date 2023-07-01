@@ -1,6 +1,4 @@
-use names::mut_ref_trait_name;
-use names::owned_trait_name;
-use names::ref_trait_name;
+use names::trait_name;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::ItemStruct;
@@ -10,6 +8,7 @@ mod functions;
 mod names;
 mod structs;
 
+#[derive(Clone, Copy)]
 enum GenerationType {
     Owned,
     Ref,
@@ -34,12 +33,18 @@ pub fn enum_filter(_args: TokenStream, input: TokenStream) -> TokenStream {
 
     for variant in enum_data.variants.iter() {
         structs::generate_structs(enum_name, variant).map(|s| structs.extend_from_slice(&s));
-        owned_defs.push(functions::generate_owned_def(enum_name, variant));
+        owned_defs.push(functions::generate_fn_def(
+            enum_name,
+            variant,
+            GenerationType::Owned,
+        ));
+        // owned_defs.push(functions::generate_fn_def(enum_name, variant));
+        // owned_defs.push(functions::generate_fn_def(enum_name, variant));
     }
 
-    let owned_trait_name = owned_trait_name(enum_name);
-    let ref_trait_name = ref_trait_name(enum_name);
-    let mut_ref_trait_name = mut_ref_trait_name(enum_name);
+    let owned_trait_name = trait_name(enum_name, GenerationType::Owned);
+    let ref_trait_name = trait_name(enum_name, GenerationType::Ref);
+    let mut_ref_trait_name = trait_name(enum_name, GenerationType::RefMut);
 
     quote! {
         #(#structs)*

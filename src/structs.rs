@@ -1,15 +1,14 @@
 use quote::quote;
 use syn::{parse::Parser, parse_quote, Field, Fields, Ident, ItemStruct, Variant};
 
-use crate::names::owned_struct_name;
-use crate::names::ref_struct_name;
+use crate::{names::struct_name, GenerationType};
 
 pub fn generate_structs(enum_name: &Ident, variant: &Variant) -> Option<Vec<ItemStruct>> {
     match &variant.fields {
         Fields::Unit => None,
 
         Fields::Named(fields) => {
-            let name = owned_struct_name(enum_name, variant);
+            let name = struct_name(enum_name, variant, GenerationType::Owned);
 
             let owned_fields = fields.named.iter();
 
@@ -18,8 +17,6 @@ pub fn generate_structs(enum_name: &Ident, variant: &Variant) -> Option<Vec<Item
                     #(#owned_fields,)*
                 }
             );
-
-            println!("Owned struct with name: {:?}", owned.ident);
 
             let ref_fields = fields.named.iter().map(|f| {
                 let t = &f.ty;
@@ -31,7 +28,7 @@ pub fn generate_structs(enum_name: &Ident, variant: &Variant) -> Option<Vec<Item
                 Field::parse_named.parse2(field).unwrap()
             });
 
-            let name = ref_struct_name(enum_name, variant);
+            let name = struct_name(enum_name, variant, GenerationType::Ref);
 
             let refs: ItemStruct = parse_quote! {
                 struct #name<'a> {
