@@ -38,8 +38,16 @@ pub fn enum_filter(_args: TokenStream, input: TokenStream) -> TokenStream {
             variant,
             GenerationType::Owned,
         ));
-        // owned_defs.push(functions::generate_fn_def(enum_name, variant));
-        // owned_defs.push(functions::generate_fn_def(enum_name, variant));
+        ref_defs.push(functions::generate_fn_def(
+            enum_name,
+            variant,
+            GenerationType::Ref,
+        ));
+        mut_ref_defs.push(functions::generate_fn_def(
+            enum_name,
+            variant,
+            GenerationType::RefMut,
+        ));
     }
 
     let owned_trait_name = trait_name(enum_name, GenerationType::Owned);
