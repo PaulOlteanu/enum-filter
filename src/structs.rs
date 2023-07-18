@@ -1,44 +1,26 @@
-use quote::quote;
-use syn::{parse::Parser, parse_quote, Field, Fields, Ident, ItemStruct, Variant};
+use quote::{format_ident, quote};
+use syn::{parse_quote, Fields, ItemStruct, Variant};
 
-use crate::{names::struct_name, GenerationType};
+// TODO: Maybe derive the same derives if possible
+pub(crate) fn generate_struct(variant: &Variant) -> Option<ItemStruct> {
+    if let Fields::Named(f) = &variant.fields {
+        let name = format_ident!("{}Data", variant.ident);
+        let fields = &f.named;
+        let generics = (0..fields.len()).map(|i| format_ident!("T{}", i));
+        let generics = quote! {<#(#generics),*>};
 
-pub fn generate_structs(enum_name: &Ident, variant: &Variant) -> Option<Vec<ItemStruct>> {
-    match &variant.fields {
-        Fields::Unit => None,
+        let fields = fields.iter().enumerate().map(|(i, f)| {
+            let ident = f.ident.as_ref().unwrap();
+            let t = format_ident!("T{}", i);
+            quote! { #ident: #t }
+        });
 
-        Fields::Named(fields) => {
-            let name = struct_name(enum_name, variant, GenerationType::Owned);
-
-            let owned_fields = fields.named.iter();
-
-            let owned: ItemStruct = parse_quote!(
-                struct #name {
-                    #(#owned_fields,)*
-                }
-            );
-
-            let ref_fields = fields.named.iter().map(|f| {
-                let t = &f.ty;
-                let i = f.ident.as_ref().unwrap();
-                let field = quote! {
-                    #i : &'a #t
-                };
-
-                Field::parse_named.parse2(field).unwrap()
-            });
-
-            let name = struct_name(enum_name, variant, GenerationType::Ref);
-
-            let refs: ItemStruct = parse_quote! {
-                struct #name<'a> {
-                    #(#ref_fields),*
-                }
-            };
-
-            Some(vec![owned, refs])
-        }
-
-        Fields::Unnamed(_fields) => None,
+        Some(parse_quote! {
+            struct #name #generics {
+                #(#fields,)*
+            }
+        })
+    } else {
+        None
     }
 }

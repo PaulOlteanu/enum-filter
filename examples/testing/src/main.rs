@@ -1,3 +1,5 @@
+use std::iter::FilterMap;
+
 use enum_filter::enum_filter;
 
 #[enum_filter]
@@ -15,6 +17,4 @@ fn main() {
     println!("{:?}", result);
     let result: Vec<_> = temp.into_iter().filter_v2().collect();
     println!("{:?}", result);
-
-    println!("Hello, world!");
 }

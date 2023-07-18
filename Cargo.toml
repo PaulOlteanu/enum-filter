@@ -1,6 +1,9 @@
 [package]
 name = "enum-filter"
 version = "0.1.0"
+authors = ["Paul Olteanu <p.a.olteanu@gmail.com>"]
+repository = "https://github.com/PaulOlteanu/enum-filter"
+license = "MIT"
 edition = "2021"
 
 [lib]

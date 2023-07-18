@@ -1,15 +1,19 @@
+use impls::generate_impl;
 use names::trait_name;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::ItemStruct;
-use syn::{parse_macro_input, DeriveInput, TraitItemFn};
+use structs::generate_struct;
+use syn::{parse_macro_input, DeriveInput};
+use traits::generate_trait;
 
 mod functions;
+mod impls;
 mod names;
 mod structs;
+mod traits;
 
 #[derive(Clone, Copy)]
-enum GenerationType {
+enum IterType {
     Owned,
     Ref,
     RefMut,
@@ -24,63 +28,26 @@ pub fn enum_filter(_args: TokenStream, input: TokenStream) -> TokenStream {
         _ => panic!("enum_filter only supports enums"),
     };
 
-    let mut structs: Vec<ItemStruct> = Vec::new();
-    let mut owned_defs: Vec<TraitItemFn> = Vec::new();
-    let mut ref_defs: Vec<TraitItemFn> = Vec::new();
-    let mut mut_ref_defs: Vec<TraitItemFn> = Vec::new();
-
     let enum_name = &ast.ident;
 
-    for variant in enum_data.variants.iter() {
-        structs::generate_structs(enum_name, variant).map(|s| structs.extend_from_slice(&s));
-        owned_defs.push(functions::generate_fn_def(
-            enum_name,
-            variant,
-            GenerationType::Owned,
-        ));
-        ref_defs.push(functions::generate_fn_def(
-            enum_name,
-            variant,
-            GenerationType::Ref,
-        ));
-        mut_ref_defs.push(functions::generate_fn_def(
-            enum_name,
-            variant,
-            GenerationType::RefMut,
-        ));
-    }
+    let structs = enum_data.variants.iter().filter_map(generate_struct);
+    let trait_name = trait_name(enum_name);
+    let trait_def = generate_trait(&ast.vis, &trait_name, enum_data);
 
-    let owned_trait_name = trait_name(enum_name, GenerationType::Owned);
-    let ref_trait_name = trait_name(enum_name, GenerationType::Ref);
-    let mut_ref_trait_name = trait_name(enum_name, GenerationType::RefMut);
+    let owned_impl = generate_impl(enum_name, &trait_name, enum_data, IterType::Owned);
+    let ref_impl = generate_impl(enum_name, &trait_name, enum_data, IterType::Ref);
+    let ref_mut_impl = generate_impl(enum_name, &trait_name, enum_data, IterType::RefMut);
 
     quote! {
+        #ast
+
         #(#structs)*
 
-        trait #owned_trait_name
-        where Self: Sized + Iterator<Item = #enum_name>,
-        {
-            #(#owned_defs)*
-        }
+        #trait_def
 
-        trait #ref_trait_name <'a>
-        where Self: Sized + Iterator<Item = &'a #enum_name>,
-        {
-            #(#ref_defs)*
-        }
-
-        trait #mut_ref_trait_name <'a>
-        where Self: Sized + Iterator<Item = &'a mut #enum_name>,
-        {
-            #(#mut_ref_defs)*
-        }
-
-        impl<T: Iterator<Item = #enum_name>> #owned_trait_name for T {}
-        impl<'a, T: Iterator<Item = &'a #enum_name>> #ref_trait_name <'a> for T {}
-        impl<'a, T: Iterator<Item = &'a mut #enum_name>> #mut_ref_trait_name <'a> for T {}
-
-
-        #ast
+        #owned_impl
+        #ref_impl
+        #ref_mut_impl
     }
     .into()
 }
