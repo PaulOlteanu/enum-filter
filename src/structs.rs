@@ -1,7 +1,6 @@
 use quote::{format_ident, quote};
 use syn::{parse_quote, Fields, ItemStruct, Variant};
 
-// TODO: Maybe derive the same derives if possible
 pub(crate) fn generate_struct(variant: &Variant) -> Option<ItemStruct> {
     if let Fields::Named(f) = &variant.fields {
         let name = format_ident!("{}Data", variant.ident);

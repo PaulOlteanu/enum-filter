@@ -8,16 +8,25 @@ fn get_filter_return_type(variant: &Variant, iter_type: IterType) -> Type {
     match &variant.fields {
         Fields::Unit => parse_quote! {()},
         Fields::Unnamed(fields) => {
-            let types = fields.unnamed.iter().map(|f| {
-                let t = &f.ty;
-
+            if fields.unnamed.len() == 1 {
+                let t = &fields.unnamed[0].ty;
                 match iter_type {
                     IterType::Owned => t.clone(),
-                    IterType::Ref => parse_quote! {&'a #t},
-                    IterType::RefMut => parse_quote! {&'a mut #t},
+                    IterType::Ref => parse_quote! {&'eflt #t},
+                    IterType::RefMut => parse_quote! {&'eflt mut #t},
                 }
-            });
-            parse_quote! {(#(#types,)*)}
+            } else {
+                let types = fields.unnamed.iter().map(|f| {
+                    let t = &f.ty;
+
+                    match iter_type {
+                        IterType::Owned => t.clone(),
+                        IterType::Ref => parse_quote! {&'eflt #t},
+                        IterType::RefMut => parse_quote! {&'eflt mut #t},
+                    }
+                });
+                parse_quote! {(#(#types,)*)}
+            }
         }
         Fields::Named(fields) => {
             let ident = format_ident!("{}Data", variant.ident);
@@ -25,8 +34,8 @@ fn get_filter_return_type(variant: &Variant, iter_type: IterType) -> Type {
 
             match iter_type {
                 IterType::Owned => parse_quote! {#ident<#(#field_types),*>},
-                IterType::Ref => parse_quote! {#ident<#(&'a #field_types),*>},
-                IterType::RefMut => parse_quote! {#ident<#(&'a mut #field_types),*>},
+                IterType::Ref => parse_quote! {#ident<#(&'eflt #field_types),*>},
+                IterType::RefMut => parse_quote! {#ident<#(&'eflt mut #field_types),*>},
             }
         }
     }
@@ -37,8 +46,12 @@ fn get_filter_return_value(variant: &Variant) -> Expr {
         Fields::Unit => parse_quote!(()),
 
         Fields::Unnamed(fields) => {
-            let names = (0..fields.unnamed.len()).map(|i| format_ident!("v{}", i));
-            parse_quote! { (#(#names,)*) }
+            if fields.unnamed.len() == 1 {
+                parse_quote! {v0}
+            } else {
+                let names = (0..fields.unnamed.len()).map(|i| format_ident!("v{}", i));
+                parse_quote! { (#(#names,)*) }
+            }
         }
 
         Fields::Named(fields) => {
@@ -77,8 +90,8 @@ pub(crate) fn generate_impl(
         let fn_name = fn_name(&v.ident);
         let filter_arg: Type = match iter_type {
             IterType::Owned => parse_quote! {#enum_name},
-            IterType::Ref => parse_quote! {&'a #enum_name},
-            IterType::RefMut => parse_quote! {&'a mut #enum_name},
+            IterType::Ref => parse_quote! {&'eflt #enum_name},
+            IterType::RefMut => parse_quote! {&'eflt mut #enum_name},
         };
 
         let filter_return = get_filter_return_type(v, iter_type);
@@ -94,13 +107,13 @@ pub(crate) fn generate_impl(
 
     let iter_item: Type = match iter_type {
         IterType::Owned => parse_quote! {#enum_name},
-        IterType::Ref => parse_quote! {&'a #enum_name},
-        IterType::RefMut => parse_quote! {&'a mut #enum_name},
+        IterType::Ref => parse_quote! {&'eflt #enum_name},
+        IterType::RefMut => parse_quote! {&'eflt mut #enum_name},
     };
 
     let impl_generics = match iter_type {
         IterType::Owned => quote! {<T: Iterator<Item = #iter_item>>},
-        IterType::Ref | IterType::RefMut => quote! {<'a, T: Iterator<Item = #iter_item>>},
+        IterType::Ref | IterType::RefMut => quote! {<'eflt, T: Iterator<Item = #iter_item>>},
     };
 
     let trait_generics = quote! { <#iter_item, #(#filter_return_types),*>};

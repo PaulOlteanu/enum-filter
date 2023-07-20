@@ -8,7 +8,7 @@ pub(crate) fn generate_def(
     ret_value: &Expr,
 ) -> ImplItemFn {
     parse_quote! {
-        fn #name(self) -> FilterMap<Self, fn(#arg) -> Option<#ret>> {
+        fn #name(self) -> std::iter::FilterMap<Self, fn(#arg) -> Option<#ret>> {
             self.filter_map(|v| {
                 if let #matcher = v {
                     Some(#ret_value)

@@ -1,5 +1,3 @@
-use std::iter::FilterMap;
-
 use enum_filter::enum_filter;
 
 #[enum_filter]

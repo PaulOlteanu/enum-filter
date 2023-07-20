@@ -15,7 +15,7 @@ pub(crate) fn generate_trait(vis: &Visibility, name: &Ident, enum_data: &DataEnu
             let fn_name = fn_name(&v.ident);
             let ret = format_ident!("V{}", i);
             parse_quote! {
-                fn #fn_name(self) -> FilterMap<Self, fn(I) -> Option<#ret>>;
+                fn #fn_name(self) -> std::iter::FilterMap<Self, fn(I) -> Option<#ret>>;
             }
         });
 
