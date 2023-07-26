@@ -1,5 +1,7 @@
 [package]
 name = "enum-filter"
+description = "Filter to a specific enum variant from an iterator"
+readme = "README.md"
 version = "0.1.0"
 authors = ["Paul Olteanu <p.a.olteanu@gmail.com>"]
 repository = "https://github.com/PaulOlteanu/enum-filter"
@@ -15,8 +17,3 @@ proc-macro = true
 convert_case = "0.6"
 quote = "1.0"
 syn = { version = "2.0", features = ["full"] }
-
-[workspace]
-members = [
-  "examples/testing"
-]
