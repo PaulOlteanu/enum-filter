@@ -1,5 +1,7 @@
 # enum-filter
 
+[on crates.io](https://crates.io/crates/enum-filter)
+
 `enum-filter` provides a macro that will generate "filter" methods for iterators over an enum  
 It does so by creating a trait `EnumNameFilter` with the same visibilty as the enum  
 For variants with named fields it will create a struct `VariantNameData`, also with the same visibility as the enum  
